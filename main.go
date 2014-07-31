@@ -1,11 +1,11 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"image/jpeg"
-	"io/ioutil"
-	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/nfnt/resize"
@@ -13,40 +13,61 @@ import (
 
 const PATH = "resized"
 
+var yPx = flag.Uint("ypx", 0, "height of resized image in pixels, 0 = auto")
+var xPx = flag.Uint("xpx", 0, "width of resized image in pixels, 0 = auto")
+
 func main() {
+	flag.Parse()
+
+	if *xPx == 0 && *yPx == 0 {
+		flag.Usage()
+		return
+	}
+
+	args := flag.Args()
+	if len(args) != 1 {
+		flag.Usage()
+		return
+	}
+
+	files, err := filepath.Glob(flag.Args()[0])
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	os.Mkdir(PATH, 0666)
 
-	files, err := ioutil.ReadDir(".")
+	for _, file := range files {
+		resizeFile(file, *xPx, *yPx)
+	}
+
+}
+
+func resizeFile(filename string, xPx, yPx uint) {
+	if !strings.HasSuffix(filename, ".JPG") {
+		return
+	}
+	fmt.Println("Processing", filename)
+
+	file, err := os.Open(filename)
+	check(err)
+	defer file.Close()
+
+	img, err := jpeg.Decode(file)
 	check(err)
 
-	for _, file := range files {
-		if !strings.HasSuffix(file.Name(), ".JPG") {
-			continue
-		}
-		fmt.Println("Processing", file.Name())
+	m := resize.Resize(xPx, yPx, img, resize.Lanczos3)
 
-		file, err := os.Open(file.Name())
-		check(err)
-		defer file.Close()
+	out, err := os.Create(PATH + "/" + filename)
+	check(err)
+	defer out.Close()
 
-		img, err := jpeg.Decode(file)
-		check(err)
-
-		newSize := float64(img.Bounds().Size().X) * 0.3
-
-		m := resize.Resize(uint(newSize), 0, img, resize.Lanczos3)
-
-		out, err := os.Create(PATH + "/" + file.Name())
-		check(err)
-		defer out.Close()
-
-		jpeg.Encode(out, m, nil)
-	}
+	jpeg.Encode(out, m, nil)
 }
 
 func check(err error) {
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 }
