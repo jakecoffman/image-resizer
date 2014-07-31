@@ -6,7 +6,6 @@ import (
 	"image/jpeg"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/nfnt/resize"
 )
@@ -41,29 +40,33 @@ func main() {
 	for _, file := range files {
 		resizeFile(file, *xPx, *yPx)
 	}
-
 }
 
+// mockables
+var open = os.Open
+var create = os.Create
+var decode = jpeg.Decode
+var encode = jpeg.Encode
+var resizer = resize.Resize
+
 func resizeFile(filename string, xPx, yPx uint) {
-	if !strings.HasSuffix(filename, ".JPG") {
-		return
-	}
 	fmt.Println("Processing", filename)
 
-	file, err := os.Open(filename)
+	file, err := open(filename)
 	check(err)
 	defer file.Close()
 
-	img, err := jpeg.Decode(file)
+	img, err := decode(file)
 	check(err)
 
-	m := resize.Resize(xPx, yPx, img, resize.Lanczos3)
+	m := resizer(xPx, yPx, img, resize.Lanczos3)
 
-	out, err := os.Create(PATH + "/" + filename)
+	out, err := create(PATH + "/" + filename)
 	check(err)
 	defer out.Close()
 
-	jpeg.Encode(out, m, nil)
+	err = encode(out, m, nil)
+	check(err)
 }
 
 func check(err error) {
