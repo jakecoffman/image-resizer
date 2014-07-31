@@ -1,3 +1,6 @@
+[![Build Status](https://secure.travis-ci.org/jakecoffman/image-resizer.png?branch=master)](http://travis-ci.org/jakecoffman/image-resizer)
+
+
 Created this for someone who needed to quickly resize many large images to 30% their original size.
 
 1. Didn't use Python because I knew there was no way I could walk them through installing PIL on their machine
