@@ -5,7 +5,7 @@ Created this for someone who needed to quickly resize many large images to 30% t
 
 1. Didn't use Python because I knew there was no way I could walk them through installing PIL on their machine
 2. Wasn't sure if they had Java installed
-3. Didn't want to deal with C or C++
+3. Didn't want to use C or C++
 
 Go was quick and easy as the std lib has image support.
 
@@ -13,5 +13,4 @@ The only unhappiness I have is it's a bit slow, I imagine it is IO-bound. Would 
 
 TO DO list:
 
-- Make command line arguments
-- Profile to find slowness, reorganize code to fix
+- Profile to find slowness
