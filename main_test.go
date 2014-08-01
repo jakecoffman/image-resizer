@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 	"testing"
+
+	"github.com/nfnt/resize"
 )
 
 type mockImage struct{}
@@ -42,6 +44,9 @@ func Test_resizeFile(t *testing.T) {
 	}
 	encode = func(w io.Writer, m image.Image, o *jpeg.Options) error {
 		return nil
+	}
+	resizer = func(width, height uint, img image.Image, interp resize.InterpolationFunction) image.Image {
+		return mockImage{}
 	}
 	resizeFile(filename, 10, 0)
 }
