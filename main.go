@@ -12,20 +12,20 @@ import (
 
 const PATH = "resized"
 
-var yPx = flag.Uint("ypx", 0, "height of resized image in pixels, 0 = auto")
-var xPx = flag.Uint("xpx", 0, "width of resized image in pixels, 0 = auto")
+var y = flag.Float64("y", 0, "desired height, 0 for auto, 0 > y > 1 for percentage")
+var x = flag.Float64("x", 0, "desired width, 0 for auto, 0 > x > 1 for percentage")
 
 func main() {
 	flag.Parse()
 
-	if *xPx == 0 && *yPx == 0 {
-		flag.Usage()
+	if (*x == 0 && *y == 0) || *x < 0 || *y < 0 {
+		usage()
 		return
 	}
 
 	args := flag.Args()
 	if len(args) != 1 {
-		flag.Usage()
+		usage()
 		return
 	}
 
@@ -38,8 +38,15 @@ func main() {
 	os.Mkdir(PATH, 0666)
 
 	for _, file := range files {
-		resizeFile(file, *xPx, *yPx)
+		resizeFile(file, *x, *y)
 	}
+}
+
+func usage() {
+	fmt.Fprintf(os.Stderr, "Usage example:\n\tresizer -x=0.3 *.jpg\n\n")
+	fmt.Fprintf(os.Stderr, "All possible flags:\n")
+	flag.CommandLine.PrintDefaults()
+
 }
 
 // mockables
@@ -49,7 +56,7 @@ var decode = jpeg.Decode
 var encode = jpeg.Encode
 var resizer = resize.Resize
 
-func resizeFile(filename string, xPx, yPx uint) {
+func resizeFile(filename string, xPx, yPx float64) {
 	fmt.Println("Processing", filename)
 
 	file, err := open(filename)
@@ -59,7 +66,13 @@ func resizeFile(filename string, xPx, yPx uint) {
 	img, err := decode(file)
 	check(err)
 
-	m := resizer(xPx, yPx, img, resize.Lanczos3)
+	if xPx < 1 {
+		xPx = float64(img.Bounds().Size().X) * xPx
+	}
+	if yPx < 1 {
+		yPx = float64(img.Bounds().Size().Y) * yPx
+	}
+	m := resizer(uint(xPx), uint(yPx), img, resize.Bilinear)
 
 	out, err := create(PATH + "/" + filename)
 	check(err)
