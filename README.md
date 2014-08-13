@@ -10,7 +10,3 @@ Created this for someone who needed to quickly resize many large images to 30% t
 Go was quick and easy as the std lib has image support.
 
 The only unhappiness I have is it's a bit slow, I imagine it is IO-bound. Would do tests to confirm but this was a quick-n-dirty.
-
-TO DO list:
-
-- Profile to find slowness
