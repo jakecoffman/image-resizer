@@ -3,8 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"image"
+	"image/gif"
 	"image/jpeg"
+	"image/png"
 	"os"
+
 	"path/filepath"
 
 	"github.com/nfnt/resize"
@@ -35,7 +39,7 @@ func main() {
 		return
 	}
 
-	os.Mkdir(PATH, 0666)
+	os.Mkdir(PATH, 0777)
 
 	for _, file := range files {
 		resizeFile(file, *x, *y)
@@ -52,8 +56,9 @@ func usage() {
 // mockables
 var open = os.Open
 var create = os.Create
-var decode = jpeg.Decode
-var encode = jpeg.Encode
+var decode = image.Decode
+
+// var encode = image.Encode
 var resizer = resize.Resize
 
 func resizeFile(filename string, xPx, yPx float64) {
@@ -63,7 +68,7 @@ func resizeFile(filename string, xPx, yPx float64) {
 	check(err)
 	defer file.Close()
 
-	img, err := decode(file)
+	img, imgFmt, err := decode(file)
 	check(err)
 
 	if xPx < 1 {
@@ -78,7 +83,16 @@ func resizeFile(filename string, xPx, yPx float64) {
 	check(err)
 	defer out.Close()
 
-	err = encode(out, m, nil)
+	if imgFmt == "jpeg" {
+		err = jpeg.Encode(out, m, nil)
+	} else if imgFmt == "gif" {
+		err = gif.Encode(out, m, nil)
+	} else if imgFmt == "png" {
+		err = png.Encode(out, m)
+	} else {
+		fmt.Println("Unrecognized format:", imgFmt)
+		return
+	}
 	check(err)
 }
 
