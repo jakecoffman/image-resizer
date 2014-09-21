@@ -1,52 +1,38 @@
 package main
 
 import (
-	"image"
-	"image/color"
-	"image/jpeg"
-	"io"
-	"os"
+	"errors"
 	"testing"
-
-	"github.com/nfnt/resize"
 )
 
-type mockImage struct{}
+func TestParse(t *testing.T) {
+	data := []struct {
+		x        float64
+		y        float64
+		args     []string
+		expected error
+	}{
+		{0, 0, []string{""}, errors.New("specify either x or y flag or both")},
+		{-1, 0, []string{""}, errors.New("x and y flags must be positive values")},
+		{0, -1, []string{""}, errors.New("x and y flags must be positive values")},
+		{0, 1, []string{}, errors.New("specify filename or wildcard of filenames to resize")},
+		{0, 1, []string{""}, nil},
+	}
 
-func (t mockImage) ColorModel() color.Model {
-	return nil
-}
-
-func (t mockImage) Bounds() image.Rectangle {
-	return image.Rectangle{}
-}
-
-func (t mockImage) At(x, y int) color.Color {
-	return nil
-}
-
-func Test_resizeFile(t *testing.T) {
-	filename := "test.file"
-	open = func(s string) (*os.File, error) {
-		if s != filename {
-			t.Fatal("unexpected:", s)
+	for i, d := range data {
+		if err := validate(d.x, d.y, d.args); !errEq(d.expected, err) {
+			t.Errorf("%v - expected %v got %v", i, d.expected, err.Error())
 		}
-		return nil, nil
 	}
-	create = func(s string) (*os.File, error) {
-		if s != "resized/"+filename {
-			t.Fatal("unexpected:", s)
-		}
-		return nil, nil
+
+}
+
+func errEq(e1, e2 error) bool {
+	if (e1 == nil && e2 != nil) || (e1 != nil && e2 == nil) {
+		return false
 	}
-	decode = func(io.Reader) (image.Image, error) {
-		return mockImage{}, nil
+	if e1 != nil && e2 != nil && e1.Error() != e2.Error() {
+		return false
 	}
-	encode = func(w io.Writer, m image.Image, o *jpeg.Options) error {
-		return nil
-	}
-	resizer = func(width, height uint, img image.Image, interp resize.InterpolationFunction) image.Image {
-		return mockImage{}
-	}
-	resizeFile(filename, 10, 0)
+	return true
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"image"
@@ -21,14 +22,8 @@ var x = flag.Float64("x", 0, "desired width, 0 for auto, 0 > x > 1 for percentag
 
 func main() {
 	flag.Parse()
-
-	if (*x == 0 && *y == 0) || *x < 0 || *y < 0 {
-		usage()
-		return
-	}
-
-	args := flag.Args()
-	if len(args) != 1 {
+	if err := validate(*x, *y, flag.Args()); err != nil {
+		fmt.Println(err)
 		usage()
 		return
 	}
@@ -46,6 +41,22 @@ func main() {
 	}
 }
 
+func validate(x, y float64, args []string) error {
+	if x == 0 && y == 0 {
+		return errors.New("specify either x or y flag or both")
+	}
+
+	if x < 0 || y < 0 {
+		return errors.New("x and y flags must be positive values")
+	}
+
+	if len(args) != 1 {
+		return errors.New("specify filename or wildcard of filenames to resize")
+	}
+
+	return nil
+}
+
 func usage() {
 	fmt.Fprintf(os.Stderr, "Usage example:\n\tresizer -x=0.3 *.jpg\n\n")
 	fmt.Fprintf(os.Stderr, "All possible flags:\n")
@@ -53,22 +64,14 @@ func usage() {
 
 }
 
-// mockables
-var open = os.Open
-var create = os.Create
-var decode = image.Decode
-
-// var encode = image.Encode
-var resizer = resize.Resize
-
 func resizeFile(filename string, xPx, yPx float64) {
 	fmt.Println("Processing", filename)
 
-	file, err := open(filename)
+	file, err := os.Open(filename)
 	check(err)
 	defer file.Close()
 
-	img, imgFmt, err := decode(file)
+	img, imgFmt, err := image.Decode(file)
 	check(err)
 
 	if xPx < 1 {
@@ -77,9 +80,9 @@ func resizeFile(filename string, xPx, yPx float64) {
 	if yPx < 1 {
 		yPx = float64(img.Bounds().Size().Y) * yPx
 	}
-	m := resizer(uint(xPx), uint(yPx), img, resize.Bilinear)
+	m := resize.Resize(uint(xPx), uint(yPx), img, resize.Bilinear)
 
-	out, err := create(PATH + "/" + filename)
+	out, err := os.Create(PATH + "/" + filename)
 	check(err)
 	defer out.Close()
 
