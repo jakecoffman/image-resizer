@@ -2,6 +2,10 @@ package main
 
 import (
 	"errors"
+	"image"
+	"image/jpeg"
+	"os"
+	"os/exec"
 	"testing"
 )
 
@@ -35,4 +39,43 @@ func errEq(e1, e2 error) bool {
 		return false
 	}
 	return true
+}
+
+func TestFunctional(t *testing.T) {
+	// Create new image of known size
+	original := image.NewRGBA(image.Rect(0, 0, 800, 600))
+	file, err := os.Create("test.jpg")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = jpeg.Encode(file, original, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	file.Close()
+
+	// Execute resize
+	cmd := exec.Command("go", "run", "main.go", "-x=80", "*.jpg")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Error(err)
+	}
+	t.Log(string(out))
+
+	// Check the new image to see if it is the expected size
+	file, err = os.Open("resized/test.jpg")
+	defer file.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, format, err := image.Decode(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if format != "jpeg" {
+		t.Fatal("Expected jpeg got ", format)
+	}
+	if !result.Bounds().Eq(image.Rect(0, 0, 80, 60)) {
+		t.Error("Not equal: ", result.Bounds())
+	}
 }
